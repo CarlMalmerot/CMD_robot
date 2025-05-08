@@ -1,4 +1,5 @@
 This repository contains all code that was used in our Collinear Mecanum Drive robot created for our bachelors thesis at KTH.
+The full PlatformIO projects have been uploaded here, and the C++ code is contained within.
 
 The source code running on the robot can be found under CMD_robot/CMD_Stabilizing_Robot_Main/src.
 
