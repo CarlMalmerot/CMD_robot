@@ -31,7 +31,6 @@ Uses Adafruit GFX to drive the SH110X screen.
 #define MIDPOINT_ACTUAL 2048
 #define DEADZONE 100
 
-// Use SH110X_WHITE for clarity with this library
 Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 1000000, 100000);
 
 
@@ -70,9 +69,8 @@ bool draw_cross;
 telemetry_msg received_telem;
 
 
-// MAC Address of responder - edit as required
+// MAC Address of responder
 uint8_t broadcastAddress[] = {0x64, 0xb7, 0x08, 0xcc, 0xcd, 0xc8};
-// 64:b7:08:cc:cd:c8
 
 // Peer info
 esp_now_peer_info_t peerInfo;
@@ -80,7 +78,7 @@ esp_now_peer_info_t peerInfo;
 // Callback function called when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("Last Packet Send Status:");
-  //Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
   if(status == ESP_NOW_SEND_SUCCESS){
     Serial.println("Delivery Success");
     is_connected = true;
@@ -91,7 +89,6 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   }
 }
 
-
 // Function declarations
 int stick_map(int value);
 void draw_startup();
@@ -101,20 +98,18 @@ void draw_control();
 void set_display_mode();
 
 
-
-
-
 void receive_cb(const uint8_t *macAddr, const uint8_t *data, int len){
   memcpy(&received_telem, data, sizeof(received_telem));
   Serial.println("Telemetry received");
 }
 
 void setup() {
-  // Set up Serial Monitor
   Serial.begin(115200);
   // Short delay to allow serial monitor to connect if needed
   delay(500);
   Serial.println("Serial Initialized");
+
+  tone(BUZZER, 1000, 300);
 
   // Initialize OLED
   // No need for Wire.begin() separately, display.begin() handles it.
@@ -127,9 +122,9 @@ void setup() {
   display.display(); // Show initial message
   delay(1000); // Allow screen to start up fully and show message
 
-/*   Serial.println("Drawing startup screen...");
+  Serial.println("Drawing startup screen...");
   draw_startup();
-  Serial.println("Startup screen done."); */
+  Serial.println("Startup screen done.");
 
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
@@ -146,9 +141,6 @@ void setup() {
   pinMode(RS_sw, INPUT_PULLUP);
 
   Serial.println("GPIO Initialized");
-
-  // Test buzzer
-  //tone(BUZZER, 1000, 300);
   
   Serial.println("Initializing ESP-NOW...");
   // Initilize ESP-NOW
@@ -191,6 +183,8 @@ void setup() {
 
   display_mode = 0;
   set_display_mode();
+
+  tone(BUZZER, 2000, 300);
 }
 
 
@@ -208,14 +202,6 @@ void loop() {
   ls_sw = digitalRead(LS_sw);
   rs_sw = digitalRead(RS_sw);
 
-/*   // Print values to Serial Monitor for debugging
-  Serial.print("LS x:"); Serial.print(ls_x);
-  Serial.print("  LS y:"); Serial.print(ls_y);
-  Serial.print("  RS x:"); Serial.print(rs_x);
-  Serial.print("  RS y:"); Serial.print(rs_y);
-  Serial.print("  LS sw:"); Serial.print(ls_sw); // 1 = not pressed, 0 = pressed
-  Serial.print("  RS sw:"); Serial.println(rs_sw); // 1 = not pressed, 0 = pressed
- */
   // --- Prepare control message ---
   control_input.control_speed = map(ls_y, 0, 4095, -100, 100); // Inverted Y
   control_input.control_yaw_rate = map(ls_x, 0, 4095, 100, -100);
@@ -272,6 +258,7 @@ int stick_map(int value) {
   }
 }
 
+// Called to switch display modes
 void set_display_mode(){
   switch (display_mode) {
     case 0:
@@ -299,7 +286,7 @@ void draw_startup(){
   for(int i = -60; i < robot_x; i+=2){
     display.clearDisplay();
     display.drawBitmap(i, robot_y, robot, robot_w, robot_h, SH110X_WHITE);
-    display.display(); // Show the bitmap(s)
+    display.display(); // Show the bitmap
   }
 
   delay(1000);
@@ -310,8 +297,6 @@ void draw_startup(){
     display.display(); // Show the bitmap(s)
   }
 }
-
-// --- Placeholder functions for drawing stick positions and telemetry ---
 
 void draw_sticks(){
     display.clearDisplay();
@@ -325,12 +310,10 @@ void draw_sticks(){
     display.drawFastHLine(0, centerY, display.width(), SH110X_WHITE);
 
     // Map analog values (0-4095) to screen coordinates (0-127)
-    // Adjust mapping if your sticks don't use the full analog range
     int ls_screen_x = map(ls_x, 4095, 0, 0, display.width() -1);
-    int ls_screen_y = map(ls_y, 4095, 0, 0, display.height() -1); // Might need inversion: display.height()-1, 0
+    int ls_screen_y = map(ls_y, 4095, 0, 0, display.height() -1);
     int rs_screen_x = map(rs_x, 0, 4095, 0, display.width() -1);
-    int rs_screen_y = map(rs_y, 0, 4095, 0, display.height() -1); // Might need inversion
-
+    int rs_screen_y = map(rs_y, 0, 4095, 0, display.height() -1);
 
     // Draw circles representing stick positions
     display.drawCircle(ls_screen_x, ls_screen_y, 5, SH110X_WHITE); // Left stick
@@ -383,19 +366,6 @@ void draw_raw_telem(){
     display.display();
 }
 
-/*   int speed;
-  int battery_voltage;
-  int kalman_angle;
-  int raw_angle;
-  int raw_gyro;
-  int angle_pid;
-  int angle_command;
-  int motor_1_pid;
-  int motor_2_pid;
-  int yaw_rate;
-  int angular_rate;
-  int m1_rpm;
-  int m2_rpm; */
 
 void draw_control(){
   display.clearDisplay();
@@ -405,9 +375,9 @@ void draw_control(){
   static int square_side = 30;
 
   int ls_screen_x = map(ls_x, 4095, 0, -square_side/2, square_side/2);
-  int ls_screen_y = map(ls_y, 4095, 0, -square_side/2, square_side/2); // Might need inversion: display.height()-1, 0
+  int ls_screen_y = map(ls_y, 4095, 0, -square_side/2, square_side/2);
   int rs_screen_x = map(rs_x, 0, 4095, -square_side/2, square_side/2);
-  int rs_screen_y = map(rs_y, 0, 4095, -square_side/2, square_side/2); // Might need inversion
+  int rs_screen_y = map(rs_y, 0, 4095, -square_side/2, square_side/2);
 
   // Draw two small squares with circles indicating stick positions
   display.drawRect(10, SCREEN_HEIGHT - square_side - 10, square_side, square_side, 1);  // Left square
